@@ -16,13 +16,19 @@ import geopy as gp
 from datetime import datetime
 from shapely.geometry import Point
 import requests
+import csv
+import os
 
 debugOn = 1
 defaultID = 8249
 
 if debugOn == 1:
     startTime = datetime.utcnow()
-
+    resName = "nrel_results_tester.csv"
+else:
+    timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    resName = "nrel_results_" + timestamp + ".csv"
+    
 wtkData = nrel.readData(0)
 wtkDF = wtkData[1]
 stateDB = wtkData[2]
@@ -64,9 +70,20 @@ parDict["email"] = thisGrab.email
 #siteString = str("https://developer.nrel.gov//wind-toolkit/wind/wtk_download.csv?" 
 #                 + parameterString)
 
-r = requests.get(url = "https://developer.nrel.gov/api/wind-toolkit/wind/wtk_download.csv",
+if debugOn == 1 and os.path.exists(resName):
+    next
+else:
+    r = requests.get(url = "https://developer.nrel.gov/api/wind-toolkit/wind/wtk_download.csv",
                  params = parDict)
+    responseText = r.text
+    f = open(resName,'w')
+    f.write(responseText)
+    f.close
 
+thisSite = pd.read_csv(resName,header = 3)
+
+i = 1
+    
 breakPt = 1
 
 if debugOn == 1:
