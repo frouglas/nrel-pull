@@ -6,6 +6,8 @@ Created on Tue Nov  7 00:06:47 2017
 @author: frouglas
 """
 
+from datetime import datetime
+
 class county():
     def __init__(self, params):
         self.name = params.get('name')
@@ -53,3 +55,6 @@ def size_check(site_count = 1, attribute_count = 1, year_count = 1, int_per_year
     request_size = size_count*attribute_count*year_count*int_per_year
     
     return request_size
+
+def constructDate(a):
+    return datetime(a[0],a[1],a[2],a[3])
