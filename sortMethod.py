@@ -24,7 +24,7 @@ def getSites(turbine_data):
     goodSelection = 0
     
     while goodSelection == 0:
-        userSelection = input(int("please select an option: "))
+        userSelection = int(input("please select an option: "))
         goodSelection = 1
         if userSelection == 1:
             siteInfo = getStateSites(turbine_data)

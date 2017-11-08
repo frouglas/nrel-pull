@@ -21,6 +21,7 @@ import os
 
 
 debugOn = 1
+turbineMethod = 1
 
 if debugOn == 1:
     startTime = datetime.utcnow()
@@ -28,7 +29,6 @@ if debugOn == 1:
 else:
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     resName = "nrel_results_" + timestamp + ".csv"
-
  
 wtkData = nrel.readData(0)
 
@@ -38,13 +38,11 @@ else:
     wtkDF = wtkData[1]
     stateDB = wtkData[2]
 
-turbines = sm.getSites(wtkData)
+if turbineMethod == 0:
+    turbines = sm.getSites(wtkData)
+else:
+    thisTurbine = wtkDF.loc[8260]
 
+success = nrel.csvDownload(thisTurbine, 2010, 1)
 
-
-#
-#thisTurbine = wtkDF.loc[sampleT]
-#
-#success = nrel.csvDownload(thisTurbine, 2010, 0)
-#
-#breakPt = 1
+breakPt = 1

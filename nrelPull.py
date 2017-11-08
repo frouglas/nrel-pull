@@ -22,6 +22,8 @@ import data_structure as ds
 import sys
 import requests
 from shapely.geometry import Point
+import csv
+
 
 
 def readData(refresh=0):
@@ -142,9 +144,9 @@ def csvDownload(turbine, tYear = 0, query = 0):
         r = requests.get(url = "https://developer.nrel.gov/api/wind-toolkit/wind/wtk_download.csv",
                      params = parDict)
         responseText = r.text
-        f = open(resName,'w')
-        f.write(responseText)
-        f.close
+        with open(resName,'w') as f:
+            f.write(responseText)
+            f.close
     
     thisSite = pd.read_csv(resName,header = 3,usecols = ['Year','Month','Day','Hour','Minute', 'power (MW)'])
     thisSite.loc[:,"power (MW)"] = thisSite.loc[:"power (MW)"] / siteCap
