@@ -19,13 +19,26 @@ import importlib as il
 import matplotlib.pyplot as plt
 from datetime import datetime
 import data_structure as ds
+import sys
+import requests
+from shapely.geometry import Point
 
 
 def readData(refresh=0):
-    
-    if (os.path.exists("nrel.wind") and refresh != 1):
-        dataPackage = pickle.load(open( 'nrel.wind', "rb" ))
+    if sys.version_info[0] < 2:
+        print("     requires python 2 or above")
+    elif sys.version_info[0] == 2:
+        picklePath = "nrel_2.wind"
     else:
+        picklePath = "nrel.wind"
+    
+    
+    if (os.path.exists(picklePath) and refresh != 1):
+        dataPackage = pickle.load(open(picklePath, "rb" ))
+    else:
+        if ((sys.version_info == 3) and (refresh!=1) and (os.path.exists("nrel_2.wind"))):
+            picklePath = "nrel_2.wind"
+            dataPackage = pickle.load(open(picklePath, "rb" ))
         rawData = pd.DataFrame()
         
         if os.path.exists("wtk_site_metadata.csv"):
@@ -43,8 +56,8 @@ def readData(refresh=0):
         
         rawData = rawData.set_index("site_id")
         
-        states = np.sort(rawData.State.unique())
-        states = [states[i].upper() for i in range(len(states))]
+        stateList = np.sort(rawData.State.unique())
+        stateList = [stateList[i].upper() for i in range(len(stateList))]
         
     
         # compile databases of state and county level information (turbines)
@@ -54,7 +67,7 @@ def readData(refresh=0):
         thisCountyDB = {}
         
         
-        for state in states:
+        for state in stateList:
             stateData = rawData[rawData["State"] == state]
             turbines = stateData.index.values
             maxLat = stateData.latitude.max()
@@ -81,12 +94,99 @@ def readData(refresh=0):
                                   'centroid':centroid,'counties':thisCountyDB})
             stateDB[state] = thisState 
         dataPackage = [1,rawData,stateDB]
-        pickle.dump(dataPackage, open( 'nrel.wind', "wb" ))
+        pickle.dump(dataPackage, open(picklePath, "wb" ),protocol=sys.version_info[0])
         print(    "database updated")
         breakPt = 1
         
     return dataPackage   
 
+# method for downloading a single year of data from a single turbine
+
+def csvDownload(turbine, tYear = 0, query = 0):
+    debugOn = 1
+    outputFile = ""
+    
+    pointID = turbine.name
+        
+    if debugOn == 1:
+        startTime = datetime.utcnow()
+        resName = "nrel_results_tester.csv"
+    else:
+        timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        resName = "nrel_results_" + timestamp + ".csv"
+    
+    outputFile = str(pointID)
+    thisGrab = ds.defaultParams()
+    siteCap = turbine.loc["capacity"]
+    lat = turbine.loc["latitude"]
+    longitude = turbine.loc["longitude"]
+    pointLoc = Point(longitude,lat).wkt
+    
+    parDict = {}
+    
+    parDict["api_key"] = thisGrab.apiKey
+    parDict["wkt"] = pointLoc
+    parDict["atrributes"] = thisGrab.attributes
+    if tYear == 0:
+        parDict["names"] = thisGrab.names
+    else:
+        parDict["names"] = [tYear]
+    parDict["email"] = thisGrab.email
+    
+    #siteString = str("https://developer.nrel.gov//wind-toolkit/wind/wtk_download.csv?" 
+    #                 + parameterString)
+    
+    if query == 0 and os.path.exists(resName):
+        next
+    else:
+        r = requests.get(url = "https://developer.nrel.gov/api/wind-toolkit/wind/wtk_download.csv",
+                     params = parDict)
+        responseText = r.text
+        f = open(resName,'w')
+        f.write(responseText)
+        f.close
+    
+    thisSite = pd.read_csv(resName,header = 3,usecols = ['Year','Month','Day','Hour','Minute', 'power (MW)'])
+    thisSite.loc[:,"power (MW)"] = thisSite.loc[:"power (MW)"] / siteCap
+    thisSite.rename(columns={'power (MW)':'availability'}, inplace=True)
+    
+    years = thisSite["Year"].astype(int).values
+    months = thisSite["Month"].astype(int).values
+    days = thisSite["Day"].astype(int).values
+    hours = thisSite["Hour"].astype(int).values
+    minutes = thisSite["Minute"].astype(int).values
+    
+    indexArrays = [years, months, days, hours, minutes]
+    indexTuples = list(zip(*indexArrays))
+    
+    thisIndex = pd.MultiIndex.from_tuples(indexTuples, names=['Year','Month','Day','Hour','Minute'])
+    thisSite = thisSite.drop('Year',1)
+    thisSite = thisSite.drop('Month',1)
+    thisSite = thisSite.drop('Day',1)
+    thisSite = thisSite.drop('Hour',1)
+    thisSite = thisSite.drop('Minute',1)
+    
+    thisSite = thisSite.set_index(thisIndex)
+    thisSite = thisSite.groupby(level=['Year','Month','Day','Hour']).mean()
+    
+    theseYears = np.sort(thisSite.index.levels[0].values)
+    
+    for eachYear in theseYears:
+        activeShape = thisSite.loc[(eachYear,slice(None),slice(None),slice(None))]
+        activeShape['Year'] = eachYear
+        activeShape['hr_num'] = [i + 1 for i in range(len(activeShape))]
+        activeShape.set_index('Year',append=True, inplace=True)
+        activeShape.set_index('hr_num',append=True, inplace=True)
+        activeShape = activeShape.reorder_levels(['hr_num','Year','Month','Day','Hour'])
+        outputFile = outputFile + "_" + str(int(eachYear)) + ".csv"
+        activeShape.to_csv(outputFile)
+    
+    if debugOn == 1:
+        endTime = datetime.utcnow()
+        elapsed = endTime - startTime
+        print(elapsed.total_seconds())
+    
+    return(1)
 '''
 
 [sample code from other import]
