@@ -19,7 +19,7 @@ import requests
 import csv
 import os
 
-debugOn = 1
+debugOn = 0
 defaultID = 8249
 
 if debugOn == 1:
@@ -29,7 +29,7 @@ else:
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     resName = "nrel_results_" + timestamp + ".csv"
     
-wtkData = nrel.readData(0)
+wtkData = nrel.readData(1)
 wtkDF = wtkData[1]
 stateDB = wtkData[2]
 
