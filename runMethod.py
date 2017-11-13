@@ -38,7 +38,7 @@ else:
     wtkDF = wtkData[1]
     stateDB = wtkData[2]
 
-if turbineMethod == 0:
+if turbineMethod == 1:
     turbines = sm.getSites(wtkData)
 else:
     thisTurbine = wtkDF.loc[8260]

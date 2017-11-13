@@ -6,6 +6,7 @@ Created on Tue Nov 07 17:41:46 2017
 """
 
 import pandas as pd
+import gMaps as gm
 
 def getSites(turbine_data):
     
@@ -45,4 +46,14 @@ def getCountySites(turbine_data):
     return 1
 
 def getGeoSites(turbine_data):
-    return 1
+    goodSearch = 0
+    while goodSearch == 0:
+        search_string = rawinput("    enter a search term to get lat/long coords: ")
+        search_result = getCoords(search_string)
+        response = rawinput("        google has returned " + search_result[0] +
+                            ". type N to try again.")
+        response = response.upper()
+        if response != "N":
+            goodSearch = 1
+    coordResult = search_result[1]
+    return coordResult
