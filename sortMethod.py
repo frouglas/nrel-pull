@@ -11,7 +11,7 @@ import gMaps as gm
 def getSites(turbine_data):
     
     if turbine_data[0] == 0:
-        print "bad data. please try again"
+        print("bad data. please try again")
         return 0
     else:
         tDB = turbine_data[1]
@@ -48,9 +48,9 @@ def getCountySites(turbine_data):
 def getGeoSites(turbine_data):
     goodSearch = 0
     while goodSearch == 0:
-        search_string = rawinput("    enter a search term to get lat/long coords: ")
-        search_result = getCoords(search_string)
-        response = rawinput("        google has returned " + search_result[0] +
+        search_string = input("    enter a search term to get lat/long coords: ")
+        search_result = gm.getCoords(search_string)
+        response = input("        google has returned " + search_result[0] +
                             ". type N to try again.")
         response = response.upper()
         if response != "N":
